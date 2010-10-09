@@ -1,0 +1,9 @@
+jsture
+by Christophe VG <xtof@jsture.org>
+Copyright 2010, Christophe VG
+
+---
+
+jsture is an experiment to try and create a generic gestures library for
+Javascript that allows transparent application of gesture recognition to
+any Javascript based application/website.

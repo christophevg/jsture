@@ -1,0 +1,3 @@
+[submodule "ProtoJS"]
+	path = ProtoJS
+	url = http://github.com/christophevg/ProtoJS.git
