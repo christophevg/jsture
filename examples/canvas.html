@@ -16,31 +16,30 @@
     }
     #canvas  { border: 1px solid #666; }
   </style>
-  <script src="../ProtoJS/build/ProtoJS.min.js"></script>
+  <script src="../lib/ProtoJS/build/ProtoJS.min.js"></script>
   <script src="includes.js"></script>
 </head>
 
 <body>
   <div      id="monitor"></div>
   <canvas   id="canvas" width="128" height="128"></canvas><br>
-  <input    id="pattern" size="38">
-  <input  type="button" onclick="draw();" value="draw"><br>
+  <input    id="patternCode" size="48">
+  <!-- temporarily disabled ;-)
+  <input  type="button" onclick="draw();" value="draw">
+  -->
+  <br>
   <input    id="patternName" size="48">
 
   <script>
-    var monitor    = document.getElementById('monitor');
-    var canvas     = document.getElementById('canvas');
-    var ctx        = canvas.getContext('2d');
-    var patternBox = document.getElementById('pattern');
-    var nameBox    = document.getElementById('patternName');
-        
-    var monitorSize = canvasSize = 128;
-    var gridSize    = 8;
-    var cellSize    = monitorSize / gridSize;
-
-    var pixels;
-    var pattern;
+    // handler for notification of detected shape
+    function announce(shape) {
+      document.getElementById('patternName').value = shape ? 
+        "recognized " + shape.getName() : "unknown gesture";
+      document.getElementById('patternCode').value = shape ?
+        shape.toHex() : "";
+    }
     
+    // patterns to recognize
     var patterns = {
         square:  '818181FF-FF818181'
       , line1:   '08040201-80402010' //  nw - se
@@ -48,134 +47,13 @@
       , cross:   '18244281-81422418'
     };
     
-    function decodePattern(input) {
-      var pattern = [];
-      input.split('-').iterate( function(part) { 
-        pattern.push(parseInt(part,16)); 
-      } );
-      return pattern;
-    }
-    
-    var decodedPatterns = {};
-    $H(patterns).iterate(function(name, pattern) {
-      decodedPatterns[name] = decodePattern(pattern);
-    } ); 
-    
-    var monitor = new jsture.element(monitor);
-
-    function addPos(pos) {
-      if( pos.x > monitorSize || pos.y > monitorSize ) { return; }
-      pixels.push(pos);
-      var x = Math.floor(pos.x/cellSize);
-      var y = Math.floor(pos.y/cellSize);
-      var i = y * gridSize + x;
-      var b = Math.floor(i/32);
-      var r = i % 32;
-      pattern[b] |= 1<<r;
-    }
-    
-    function drawPattern( canvas, pattern ) {
-      canvas.fillStyle = "rgb(200,200,200);";
-      pattern.iterate( function( part, pi ) {
-        for( var i=0; i<32; i++ ) {
-          if( part & (1<<i) ) {
-            var p = pi * 32 + i;
-            canvas.fillRect( (p % gridSize) * cellSize, 
-                             Math.floor(p / gridSize) * cellSize, 
-                             cellSize, cellSize );
-          }
-        }
-      } );
-    }
-        
-    function draw() {
-      ctx.clearRect(0, 0, canvasSize, canvasSize );
-      drawPattern( ctx, decodePattern(patternBox.value) );
-    }
-    
-    var wrong   = 1;
-    var close   = 0.5;
-    var correct = 0;
-    
-    function comparePatternPart(part1, part2) {
-      var score = 0;
-      for( var i=0; i<32; i++ ) {
-        if( ( part1 & (1<<i) ) == ( part2 & (1<<i) ) ) {
-          score += correct;
-        } else {
-          score += wrong;
-        }
-      }
-      return score;
-    }
-    
-    function comparePattern( pattern1, pattern2 ) {
-      var score = 0;
-      pattern1.iterate( function( part, i ) {
-        score += comparePatternPart( part, pattern2[i] );
-      } ); 
-      return score;
-    }
-    
-    function compare() {
-      var best = false;
-      var bestScore = gridSize * gridSize * wrong;
-      $H(decodedPatterns).iterate( function( name, option ) {
-        var score = comparePattern( pattern, option );
-        if( score <= bestScore ) {
-          best = name;
-          bestScore = score;
-        }
-      } );
-      return best;
-    }
-    
-    function clear() {
-      pixels = new Array();
-      pattern = new Array( (gridSize * gridSize) / 32 ); // 32 bits per part
-     }
-
-    monitor.on( 'mousedown', function(pos) {
-      clear();
-      addPos(pos);
-    } );
-
-    monitor.on( 'mousedrag', function(pos) {
-      addPos(pos);
-    } );
-
-    monitor.on( 'mouseup', function() {
-      // clear
-      ctx.clearRect(0, 0, canvasSize, canvasSize);
-
-      // draw the detected pattern
-      drawPattern( ctx, pattern );
-      // encode pattern
-      var hex = [];
-      pattern.iterate( function(num, i) {
-        hex.push( ('00000000' + new Number(isNaN(num) ? 0 : num).toHex())
-                  .slice(-8) );
-      } );
-      patternBox.value = hex.join('-');
-
-      // draw the actual pixels
-      pixels.iterate( function(pixel) {
-        ctx.beginPath();
-        ctx.moveTo(pixel.x, pixel.y);
-        ctx.lineTo(pixel.x+1, pixel.y+1);
-        ctx.stroke();
-        ctx.closePath();
-      } );
-      
-      // compare
-      var best;
-      if( best = compare() ) {
-        nameBox.value = "recognized " + best;
-      } else {
-        nameBox.value = "unknown gesture";
-      }
-    } );
-
+    // setup jsture to watch the monitor, recognize our patterns and notify us
+    jsture.watch     ( 'monitor' )
+          .displayOn ( 'canvas'  )
+          .recognize ( patterns  )
+          .notify    ( announce  )
+    ;
   </script>
+  
 </body>
 </html>

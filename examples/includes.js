@@ -1,6 +1,9 @@
 var scripts = [ 
   "src/jsture.js" 
-, "src/element.js"
+, "src/Element.js"
+, "src/Pattern.js"
+, "src/Watcher.js"
+, "src/Display.js"
 ];
 
 function addScript(url) {

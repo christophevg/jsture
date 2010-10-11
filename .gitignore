@@ -1,0 +1,10 @@
+#project specific
+.check-deps
+build
+dist
+#Mac OS X
+.DS_Store
+#eclipse
+.deployment
+.project
+.settings

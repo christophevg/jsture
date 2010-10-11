@@ -1,4 +1,5 @@
-jsture.element = Class.extend( {
+jsture.Element = Class.extend( {
+  
   init : function init(element) {
     this.element = element;
     this.setupMouseEventHandlers();
@@ -11,6 +12,14 @@ jsture.element = Class.extend( {
                           this.handleMouseUp.scope(this));
     ProtoJS.Event.observe(document, 'mousemove', 
                           this.handleMouseMove.scope(this));
+  },
+  
+  getWidth : function getWith() {
+    return this.element.offsetWidth;
+  },
+  
+  getHeight : function getHeight() {
+    return this.element.offsetHeight;    
   },
 
   getLeft: function getLeft() {
@@ -64,8 +73,8 @@ jsture.element = Class.extend( {
     var pos = this.getXY(event);
     if( pos ) {
       var mouseWasOver = this.mouseOver;
-      this.mouseOver = ( pos.x >= 0 && pos.x <= this.element.width ) &&  
-      ( pos.y >= 0 && pos.y <= this.element.height );
+      this.mouseOver = ( pos.x >= 0 && pos.x <= this.getWidth() ) &&  
+                       ( pos.y >= 0 && pos.y <= this.getHeight() );
       if(this.mouseOver && !mouseWasOver) { this.fireEvent( "mouseEnter" );}
       if(!this.mouseOver && mouseWasOver) { this.fireEvent( "mouseLeave" );}
     }
@@ -81,6 +90,7 @@ jsture.element = Class.extend( {
     } );
     this.mousePos = pos;
   }
+  
 } );
 
-ProtoJS.mix( ProtoJS.Event.Handling, jsture.element.prototype );
+ProtoJS.mix( ProtoJS.Event.Handling, jsture.Element.prototype );
