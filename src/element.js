@@ -3,6 +3,7 @@ jsture.Element = Class.extend( {
   init : function init(element) {
     this.element = element;
     this.setupMouseEventHandlers();
+    this.setupTouchEventHandlers();
   },
 
   setupMouseEventHandlers: function setupMouseEventHandlers() {
@@ -12,6 +13,16 @@ jsture.Element = Class.extend( {
                           this.handleMouseUp.scope(this));
     ProtoJS.Event.observe(document, 'mousemove', 
                           this.handleMouseMove.scope(this));
+    
+  },
+  
+  setupTouchEventHandlers: function setupTouchEventHandlers() {
+    ProtoJS.Event.observe(this.element, 'touchstart',
+                          this.handleTouchStart.scope(this));
+    ProtoJS.Event.observe(this.element, 'touchmove',
+                          this.handleTouchMove.scope(this));
+    ProtoJS.Event.observe(this.element, 'touchend',
+                          this.handleTouchEnd.scope(this));
   },
   
   getWidth : function getWith() {
@@ -89,6 +100,25 @@ jsture.Element = Class.extend( {
       dy: pos.y - this.mousePos.y 
     } );
     this.mousePos = pos;
+  },
+  
+  handleTouchStart: function handleTouchStart(event) {
+    if( event.touches.length == 1 ) {
+      this.handleMouseDown(event.touches[0]);
+      event.preventDefault();
+    }   
+  },
+
+  handleTouchMove: function handleTouchMove(event) {
+    if( event.touches.length == 1 ) {
+      this.handleMouseDrag(event.touches[0]);
+      event.preventDefault();
+    }   
+  },
+
+  handleTouchEnd: function handleTouchEnd(event) {
+    this.handleMouseUp(event);
+    event.preventDefault();
   }
   
 } );
