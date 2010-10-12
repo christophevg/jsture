@@ -56,9 +56,12 @@ jsture.Watcher = Class.extend( {
 
   stopRecording : function stopRecording(pos) {
     this.clearDisplay();
-    this.drawPattern();
     this.drawPixels();
-    this.detectPattern();
+    var detected = this.detectPattern();
+    this.drawPattern( detected.pattern,        "rgba(128,128,128,1)" );
+    this.drawPattern( detected.result.correct, "rgba(0,255,0,0.3)"   );
+    this.drawPattern( detected.result.close,   "rgba(255,255,0,0.3)" );
+    this.drawPattern( detected.result.wrong,   "rgba(255,0,0,0.3)"   );
   },
 
   clearDisplay : function clearDisplay() {
@@ -71,26 +74,32 @@ jsture.Watcher = Class.extend( {
     }.scope(this) );
   },
   
-  drawPattern : function drawPattern() {
+  drawPattern : function drawPattern(pattern, color) {
+    pattern = pattern || this.pattern;
     var rowSize = this.getGridWidth();
-    this.pattern.iterate( function( state, index ) {
+    pattern.iterate( function( state, index ) {
       if( state === true ) {
         this.display.drawCell( { left: index % rowSize,
-                                 top : Math.floor(index / rowSize) });
+                                 top : Math.floor(index / rowSize) },
+                               color );
       }
     }.scope(this) );
   },
   
   detectPattern : function detectPattern() {
-    var bestMatch, bestPattern; 
+    var bestPattern, bestResult, bestScore; 
+    var rowSize = this.getGridWidth();
     this.patterns.iterate( function( pattern ) {
-      var match = pattern.compareTo( this.pattern );
-      if( ! bestMatch || match <= bestMatch ) { 
-        bestMatch = match;
+      var result = this.pattern.compareTo( pattern, rowSize );
+      console.log( pattern.getName(), result.score );
+      if( ! bestScore || result.score <= bestScore ) { 
+        bestScore   = result.score;
         bestPattern = pattern;
+        bestResult  = result;
       }
     }.scope(this) );
     this.notifyAbout( 'PatternDetected', bestPattern );
+    return { result : bestResult, pattern: bestPattern };
   },
 
   notifyAbout : function notifyAbout( event, info ) {
