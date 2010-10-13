@@ -37,10 +37,13 @@ check-deps:
 ${BUILD_DIR}:
 	@mkdir  -p ${BUILD_DIR}
 
-${BUILD_DIR}/${APP}.js: ${BUILD_DIR} ${SHARED_SRCS}
+${BUILD_DIR}/${APP}.js: ${BUILD_DIR} ${SRCS}
 	@echo "*** building $@"
 	@cat ${SRCS} > $@
 	@echo "\n${APP}.version = \"${VERSION}\";\n" >> $@;
+
+${LIB_DIR}/ProtoJS/build/ProtoJS.js:
+	( cd ${LIB_DIR}/ProtoJS; make )
 
 %.min.js: %.js
 	@echo "*** building $@"
