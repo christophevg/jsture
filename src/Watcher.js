@@ -56,12 +56,12 @@ jsture.Watcher = Class.extend( {
 
   stopRecording : function stopRecording(pos) {
     this.clearDisplay();
-    this.drawPixels();
     var detected = this.detectPattern();
     this.drawPattern( detected.pattern,        "rgba(128,128,128,1)" );
     this.drawPattern( detected.result.correct, "rgba(0,255,0,0.3)"   );
     this.drawPattern( detected.result.close,   "rgba(255,255,0,0.3)" );
     this.drawPattern( detected.result.wrong,   "rgba(255,0,0,0.3)"   );
+    this.drawPixels();
   },
 
   clearDisplay : function clearDisplay() {

@@ -57,14 +57,8 @@ jsture.Display = Class.extend( {
   },
   
   drawPixel : function drawPixel( pixel, color ) {
-    this.canvas.lineStyle = color || "black";
-    with(this.canvas) {
-      beginPath();
-      moveTo(pixel.x, pixel.y);
-      lineTo(pixel.x+1, pixel.y+1);
-      stroke();
-      closePath();
-    }
+    this.canvas.fillStyle = color || "black";
+    this.canvas.fillRect( pixel.x-1, pixel.y-1,2,2);
   },
 
   drawCells : function drawCells( cells, color ) {
