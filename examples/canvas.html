@@ -32,11 +32,11 @@
 
   <script>
     // handler for notification of detected shape
-    function announce(shape) {
-      document.getElementById('patternName').value = shape ? 
-        "recognized " + shape.getName() : "unknown gesture";
-      document.getElementById('patternCode').value = shape ?
-        shape.toHex() : "";
+    function announce(pattern) {
+      document.getElementById('patternName').value = pattern ? 
+        "recognized " + pattern.match.getName() : "unknown gesture";
+      document.getElementById('patternCode').value = pattern ?
+        pattern.recorded.toHex() : "";
     }
     
     // patterns to recognize
@@ -45,6 +45,8 @@
       , line1:   '08040201-80402010' //  nw - se
       , line2:   '10204080-01020408' //  ne - sw
       , cross:   '18244281-81422418'
+      , circle:  '81C1437C-3867C181'
+      , heart:   '8391DF70-08181CE6'
     };
     
     // setup jsture to watch the monitor, recognize our patterns and notify us

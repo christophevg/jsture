@@ -170,7 +170,8 @@ jsture.Watcher = Class.extend( {
         bestResult  = result;
       }
     }.scope(this) );
-    this.notifyAbout( 'PatternDetected', bestPattern );
+    this.notifyAbout( 'PatternDetected', 
+                      { recorded: pattern, match: bestPattern } );
     return { recorded: pattern, result : bestResult, pattern: bestPattern };
   },
 
