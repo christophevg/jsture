@@ -42,40 +42,102 @@ jsture.Watcher = Class.extend( {
   },
 
   recordPosition : function recordPosition(pos) {
-    // keep the actual pixel
     this.pixels.push(pos);
-
-    // determine x/y of cell
-    var x = Math.floor( pos.x / this.getCellWidth() );
-    var y = Math.floor( pos.y / this.getCellHeight() );
-    // determine index of x/y position in bitfield
-    var index = y * this.getGridWidth() + x;
-
-    this.pattern.set(index);
   },
 
   stopRecording : function stopRecording(pos) {
     this.clearDisplay();
-    var detected = this.detectPattern();
+
+    var box            = this.detectBoundingBox(this.pixels);
+    var translation    = this.determineTranslation(box);
+    var scaleFactor    = this.determineScaleFactor(box);
+    
+    var centeredPixels = this.translate(this.pixels, translation);
+    var scaledPixels   = this.scale(centeredPixels, scaleFactor);
+
+    var detected       = this.detectPattern(scaledPixels);
+
     this.drawPattern( detected.pattern,        "rgba(128,128,128,1)" );
     this.drawPattern( detected.result.correct, "rgba(0,255,0,0.3)"   );
     this.drawPattern( detected.result.close,   "rgba(255,255,0,0.3)" );
     this.drawPattern( detected.result.wrong,   "rgba(255,0,0,0.3)"   );
-    this.drawPixels();
+
+    this.drawPixels(this.pixels,    "rgb(255,  0,  0)");
+    this.drawPixels(centeredPixels, "rgb(255,255,128)");
+    this.drawPixels(scaledPixels,   "rgb(  0,255,  0)");
   },
 
   clearDisplay : function clearDisplay() {
     this.display.clear();
   },
   
-  drawPixels : function drawPixels() {
-    this.pixels.iterate( function(pixel) {
-      this.display.drawPixel( pixel );
+  detectBoundingBox : function detectBoundingBox(pixels) {
+    var box = { left : 99999, right : 0, top : 99999, bottom : 0 };
+    pixels.iterate( function(pixel) {
+      if( pixel.x < box.left   ) { box.left   = pixel.x; }
+      if( pixel.x > box.right  ) { box.right  = pixel.x; }
+      if( pixel.y < box.top    ) { box.top    = pixel.y; }
+      if( pixel.y > box.bottom ) { box.bottom = pixel.y; }
+    } );
+    // padding
+    box.padding = {};
+    box.padding.top    = box.top;
+    box.padding.bottom = this.monitor.getHeight() - box.bottom;
+    box.padding.left   = box.left;
+    box.padding.right  = this.monitor.getWidth() - box.right;
+    return box;
+  },
+
+  determineTranslation : function determineTranslation(box) {
+    return { 
+      x : ( ( box.padding.left + box.padding.right  ) / 2 ) - box.left,
+      y : ( ( box.padding.top  + box.padding.bottom ) / 2 ) - box.top
+    }
+  },
+  
+  translate : function translate(pixels, translation) {
+    var newPixels = [];
+    pixels.iterate( function(pixel) {
+      newPixels.push( { 
+        x : pixel.x + translation.x,
+        y : pixel.y + translation.y 
+      } );
+    } );
+    return newPixels;
+  },
+
+  determineScaleFactor : function determineScaleFactor(box) {
+    var mx = this.monitor.getWidth()  / 2;
+    var my = this.monitor.getHeight() / 2;
+    var borderX = ( box.padding.left + box.padding.right ) / 2;
+    var borderY = ( box.padding.left + box.padding.right ) / 2;
+    var sx = 1 + ((mx-this.getGridWidth())  - (mx-borderX)) / (mx-borderX);
+    var sy = 1 + ((my-this.getGridHeight()) - (my-borderY)) / (my-borderY);
+    var s = sx < sy ? sx : sy;
+    return s;
+  },
+  
+  scale : function scale(pixels, s) {
+    s = s || 1;
+    var mx = this.monitor.getWidth()  / 2;
+    var my = this.monitor.getHeight() / 2;
+    var newPixels = [];
+    pixels.iterate( function( pixel ) {
+      newPixels.push( { 
+        x : mx + (( pixel.x - mx ) * s),
+        y : my + (( pixel.y - my ) * s) 
+      } );
+    } );
+    return newPixels;
+  },
+  
+  drawPixels : function drawPixels(pixels, color) {
+    pixels.iterate( function(pixel) {
+      this.display.drawPixel( pixel, color );
     }.scope(this) );
   },
   
   drawPattern : function drawPattern(pattern, color) {
-    pattern = pattern || this.pattern;
     var rowSize = this.getGridWidth();
     pattern.iterate( function( state, index ) {
       if( state === true ) {
@@ -86,19 +148,30 @@ jsture.Watcher = Class.extend( {
     }.scope(this) );
   },
   
-  detectPattern : function detectPattern() {
+  detectPattern : function detectPattern(pixels) {
+    // detect pattern zones
+    var pattern = new jsture.Pattern();
+    pixels.iterate( function(pixel) {
+      var x = Math.floor( pixel.x / this.getCellWidth() );
+      var y = Math.floor( pixel.y / this.getCellHeight() );
+      // determine index of x/y position in bitfield
+      var index = y * this.getGridWidth() + x;
+      pattern.set(index);
+    }.scope(this) );
+
+    // compare with known patterns
     var bestPattern, bestResult, bestScore; 
     var rowSize = this.getGridWidth();
-    this.patterns.iterate( function( pattern ) {
-      var result = this.pattern.compareTo( pattern, rowSize );
+    this.patterns.iterate( function( aPattern ) {
+      var result = pattern.compareTo( aPattern, rowSize );
       if( ! bestScore || result.score <= bestScore ) { 
         bestScore   = result.score;
-        bestPattern = pattern;
+        bestPattern = aPattern;
         bestResult  = result;
       }
     }.scope(this) );
     this.notifyAbout( 'PatternDetected', bestPattern );
-    return { result : bestResult, pattern: bestPattern };
+    return { recorded: pattern, result : bestResult, pattern: bestPattern };
   },
 
   notifyAbout : function notifyAbout( event, info ) {
@@ -109,7 +182,6 @@ jsture.Watcher = Class.extend( {
   
   clear : function clear() {
     this.pixels = [];
-    this.pattern  = new jsture.Pattern();
   },
   
   getCellWidth : function getCellWidth() {
