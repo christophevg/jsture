@@ -91,7 +91,6 @@ jsture.Watcher = Class.extend( {
     var rowSize = this.getGridWidth();
     this.patterns.iterate( function( pattern ) {
       var result = this.pattern.compareTo( pattern, rowSize );
-      console.log( pattern.getName(), result.score );
       if( ! bestScore || result.score <= bestScore ) { 
         bestScore   = result.score;
         bestPattern = pattern;
