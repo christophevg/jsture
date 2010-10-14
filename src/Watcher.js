@@ -48,11 +48,21 @@ jsture.Watcher = Class.extend( {
   stopRecording : function stopRecording(pos) {
     this.clearDisplay();
 
-    var box            = this.detectBoundingBox(this.pixels);
+    // rescale monitor to display
+    var sf = ( this.display.getWidth() / this.monitor.getWidth() );
+    var pixels = [];
+    this.pixels.iterate( function(pixel, i) {
+      pixels.push( { 
+        x : pixel.x * sf,
+        y : pixel.y * sf
+      } );
+    } );
+
+    var box            = this.detectBoundingBox(pixels);
     var translation    = this.determineTranslation(box);
     var scaleFactor    = this.determineScaleFactor(box);
     
-    var centeredPixels = this.translate(this.pixels, translation);
+    var centeredPixels = this.translate(pixels, translation);
     var scaledPixels   = this.scale(centeredPixels, scaleFactor);
 
     var detected       = this.detectPattern(scaledPixels);
@@ -62,7 +72,7 @@ jsture.Watcher = Class.extend( {
     this.drawPattern( detected.result.close,   "rgba(255,255,0,0.3)" );
     this.drawPattern( detected.result.wrong,   "rgba(255,0,0,0.3)"   );
 
-    this.drawPixels(this.pixels,    "rgb(255,  0,  0)");
+    this.drawPixels(pixels,    "rgb(255,  0,  0)");
     this.drawPixels(centeredPixels, "rgb(255,255,128)");
     this.drawPixels(scaledPixels,   "rgb(  0,255,  0)");
   },
@@ -82,9 +92,9 @@ jsture.Watcher = Class.extend( {
     // padding
     box.padding = {};
     box.padding.top    = box.top;
-    box.padding.bottom = this.monitor.getHeight() - box.bottom;
+    box.padding.bottom = this.display.getHeight() - box.bottom;
     box.padding.left   = box.left;
-    box.padding.right  = this.monitor.getWidth() - box.right;
+    box.padding.right  = this.display.getWidth() - box.right;
     return box;
   },
 
@@ -107,10 +117,10 @@ jsture.Watcher = Class.extend( {
   },
 
   determineScaleFactor : function determineScaleFactor(box) {
-    var mx = this.monitor.getWidth()  / 2;
-    var my = this.monitor.getHeight() / 2;
-    var borderX = ( box.padding.left + box.padding.right ) / 2;
-    var borderY = ( box.padding.left + box.padding.right ) / 2;
+    var mx = this.display.getWidth()  / 2;
+    var my = this.display.getHeight() / 2;
+    var borderX = ( box.padding.left + box.padding.right  ) / 2;
+    var borderY = ( box.padding.top  + box.padding.bottom ) / 2;
     var sx = 1 + ((mx-this.getGridWidth())  - (mx-borderX)) / (mx-borderX);
     var sy = 1 + ((my-this.getGridHeight()) - (my-borderY)) / (my-borderY);
     var s = sx < sy ? sx : sy;
@@ -119,8 +129,8 @@ jsture.Watcher = Class.extend( {
   
   scale : function scale(pixels, s) {
     s = s || 1;
-    var mx = this.monitor.getWidth()  / 2;
-    var my = this.monitor.getHeight() / 2;
+    var mx = this.display.getWidth()  / 2;
+    var my = this.display.getHeight() / 2;
     var newPixels = [];
     pixels.iterate( function( pixel ) {
       newPixels.push( { 
@@ -186,7 +196,7 @@ jsture.Watcher = Class.extend( {
   },
   
   getCellWidth : function getCellWidth() {
-    return this.monitor.getWidth() / this.getGridWidth();
+    return this.display.getWidth() / this.getGridWidth();
   },
   
   getGridWidth : function getGridWidth() {
@@ -194,7 +204,7 @@ jsture.Watcher = Class.extend( {
   },
   
   getCellHeight : function getCellHeight() {
-    return this.monitor.getHeight() / this.getGridHeight();
+    return this.display.getHeight() / this.getGridHeight();
   },
   
   getGridHeight : function getGridHeight() {
