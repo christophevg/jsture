@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Initial tests page</title>
+  <meta name="viewport" 
+        content="width=device-width; initial-scale=1.0; maximum-scale=1.0;">
+  <style>
+    #monitor { 
+      display: inline-block; 
+      border: 1px solid #666; 
+      width: 450px;
+      height: 450px;
+      cursor: pointer;
+    }
+    canvas  { border: 1px solid #666; }
+  </style>
+  <script src="../lib/ProtoJS/build/ProtoJS.min.js"></script>
+  <script src="includes.js"></script>
+</head>
+
+<body>
+  
+  <table>
+    <tr>
+      <td>
+        <div id="monitor"></div>
+      </td>
+      <td valign="top">
+        <canvas id="canvas"  width="128" height="128"></canvas>
+        <canvas id="canvas2" width="128" height="128"></canvas>
+        <canvas id="canvas3" width="128" height="128"></canvas>
+        <canvas id="canvas4" width="128" height="128"></canvas><br>
+        <textarea id="log" cols="73" rows="24"></textarea>
+      </td>
+    </tr>
+  </table>
+
+  <script>
+    var log = document.getElementById('log');
+    var scrollPatterns = [];
+    // handler for notification of detected shape
+    function announce(pattern) {
+      log.value = "recognized " + pattern.match.getName() +
+                   " from " + pattern.recorded.toHex() +
+                   " with score " + pattern.score +
+                   "\n" + log.value;
+      scrollPatterns.unshift( pattern );
+      updateScroller();
+    }
+    
+    var displays = [];
+    for( var i=2; i<5; i++ ) {
+      displays.push( new jsture.Display(document.getElementById('canvas'+i))
+                        .setGridWidth ( 8 )
+                        .setGridHeight( 8 ) );
+    }
+    
+    function updateScroller() {
+      if( scrollPatterns.length > 4 ) { scrollPatterns.pop(); }
+      for( var i=1; i<scrollPatterns.length; i++ ) {
+        drawPattern( scrollPatterns[i], displays[i-1] );
+      }
+    }
+
+    function drawPattern( pattern, display ) {
+      display.clear();
+      pattern.pattern.draw       ( display, "rgba(128,128,128,1)", 8 );
+      pattern.result.correct.draw( display, "rgba(0,255,0,0.3)"  , 8 );
+      pattern.result.close.draw  ( display, "rgba(255,255,0,0.3)", 8 );
+      pattern.result.wrong.draw  ( display, "rgba(255,0,0,0.3)"  , 8 );
+
+      display.drawPixels( pattern.pixels,         "rgb(255,  0,  0)" );
+      display.drawPixels( pattern.centeredPixels, "rgb(255,255,128)" );
+      display.drawPixels( pattern.scaledPixels,   "rgb(  0,255,  0)" );
+    }
+
+    // patterns to recognize
+    var patterns = {
+        square:  '818181FF-FF818181'
+      , line1:   '08040201-80402010' //  nw - se
+      , line2:   '10204080-01020408' //  ne - sw
+      , cross:   '18244281-81422418'
+      , circle:  '81C1437C-3867C181'
+      , heart:   '8391DF70-08181CE6'
+    };
+    
+    // setup jsture to watch the monitor, recognize our patterns and notify us
+    jsture.watch     ( 'monitor' )
+          .displayOn ( 'canvas'  )
+          .recognize ( patterns  )
+          .notify    ( announce  )
+    ;
+  </script>
+  
+</body>
+</html>

@@ -50,31 +50,36 @@ jsture.Watcher = Class.extend( {
 
     // rescale monitor to display
     var sf = ( this.display.getWidth() / this.monitor.getWidth() );
-    var pixels = [];
-    this.pixels.iterate( function(pixel, i) {
-      pixels.push( { 
-        x : pixel.x * sf,
-        y : pixel.y * sf
-      } );
-    } );
+    var pixels         = this.scale(this.pixels, sf); 
 
+    // center and scale to max of display
     var box            = this.detectBoundingBox(pixels);
     var translation    = this.determineTranslation(box);
     var scaleFactor    = this.determineScaleFactor(box);
     
     var centeredPixels = this.translate(pixels, translation);
-    var scaledPixels   = this.scale(centeredPixels, scaleFactor);
+    var cx = this.display.getWidth()  / 2;
+    var cy = this.display.getHeight() / 2;
+    var scaledPixels   = this.scale(centeredPixels, scaleFactor, cx, cy);
 
     var detected       = this.detectPattern(scaledPixels);
+    
+    var display = this.display;
+    var width   = this.getGridWidth();
+    detected.pattern.draw       ( display, "rgba(128,128,128,1)", width );
+    detected.result.correct.draw( display, "rgba(0,255,0,0.3)"  , width );
+    detected.result.close.draw  ( display, "rgba(255,255,0,0.3)", width );
+    detected.result.wrong.draw  ( display, "rgba(255,0,0,0.3)"  , width );
 
-    this.drawPattern( detected.pattern,        "rgba(128,128,128,1)" );
-    this.drawPattern( detected.result.correct, "rgba(0,255,0,0.3)"   );
-    this.drawPattern( detected.result.close,   "rgba(255,255,0,0.3)" );
-    this.drawPattern( detected.result.wrong,   "rgba(255,0,0,0.3)"   );
-
-    this.drawPixels(pixels,    "rgb(255,  0,  0)");
-    this.drawPixels(centeredPixels, "rgb(255,255,128)");
-    this.drawPixels(scaledPixels,   "rgb(  0,255,  0)");
+    this.display.drawPixels(pixels,         "rgb(255,  0,  0)");
+    this.display.drawPixels(centeredPixels, "rgb(255,255,128)");
+    this.display.drawPixels(scaledPixels,   "rgb(  0,255,  0)");
+    
+    detected.pixels         = pixels;
+    detected.centeredPixels = centeredPixels;
+    detected.scaledPixels   = scaledPixels;
+    
+    this.notifyAbout( 'PatternDetected', detected );
   },
 
   clearDisplay : function clearDisplay() {
@@ -127,35 +132,18 @@ jsture.Watcher = Class.extend( {
     return s;
   },
   
-  scale : function scale(pixels, s) {
-    s = s || 1;
-    var mx = this.display.getWidth()  / 2;
-    var my = this.display.getHeight() / 2;
+  scale : function scale(pixels, s, cx, cy) {
+    s  = s  || 1;
+    cx = cx || 0;
+    cy = cy || 0;    
     var newPixels = [];
     pixels.iterate( function( pixel ) {
       newPixels.push( { 
-        x : mx + (( pixel.x - mx ) * s),
-        y : my + (( pixel.y - my ) * s) 
+        x : cx + (( pixel.x - cx ) * s),
+        y : cy + (( pixel.y - cy ) * s) 
       } );
     } );
     return newPixels;
-  },
-  
-  drawPixels : function drawPixels(pixels, color) {
-    pixels.iterate( function(pixel) {
-      this.display.drawPixel( pixel, color );
-    }.scope(this) );
-  },
-  
-  drawPattern : function drawPattern(pattern, color) {
-    var rowSize = this.getGridWidth();
-    pattern.iterate( function( state, index ) {
-      if( state === true ) {
-        this.display.drawCell( { left: index % rowSize,
-                                 top : Math.floor(index / rowSize) },
-                               color );
-      }
-    }.scope(this) );
   },
   
   detectPattern : function detectPattern(pixels) {
@@ -180,9 +168,14 @@ jsture.Watcher = Class.extend( {
         bestResult  = result;
       }
     }.scope(this) );
-    this.notifyAbout( 'PatternDetected', 
-                      { recorded: pattern, match: bestPattern } );
-    return { recorded: pattern, result : bestResult, pattern: bestPattern };
+
+    return { 
+      recorded: pattern, 
+      result  : bestResult,
+      pattern : bestPattern,
+      match   : bestPattern, 
+      score   : bestScore 
+    };
   },
 
   notifyAbout : function notifyAbout( event, info ) {

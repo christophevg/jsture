@@ -119,7 +119,18 @@ jsture.Pattern = Class.extend( {
     if( row > 0 && rowIndex > 0 && this.get( index - rowSize - 1 ) ) { return true; }
 
     return false;
-  }
+  },
+  
+  draw : function drawPattern(display, color, rowSize) {
+    this.iterate( function( state, index ) {
+      if( state === true ) {
+        display.drawCell( { left: index % rowSize,
+                            top : Math.floor(index / rowSize) },
+                          color );
+      }
+    } );
+  },
+
   
 } );
 
