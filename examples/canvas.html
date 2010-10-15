@@ -16,6 +16,7 @@
     }
     #canvas  { border: 1px solid #666; }
   </style>
+  <!--[if IE]><script type="text/javascript" src="../lib/excanvas.js"></script><![endif]-->
   <script src="../lib/ProtoJS/build/ProtoJS.min.js"></script>
   <script src="includes.js"></script>
 </head>
@@ -31,30 +32,32 @@
   <input    id="patternName" size="48">
 
   <script>
-    // handler for notification of detected shape
-    function announce(pattern) {
-      document.getElementById('patternName').value = pattern ? 
-        "recognized " + pattern.match.getName() : "unknown gesture";
-      document.getElementById('patternCode').value = pattern ?
-        pattern.recorded.toHex() : "";
-    }
+    window.onload = function() { 
+      // handler for notification of detected shape
+      function announce(pattern) {
+        document.getElementById('patternName').value = pattern ? 
+          "recognized " + pattern.match.getName() : "unknown gesture";
+        document.getElementById('patternCode').value = pattern ?
+          pattern.recorded.toHex() : "";
+      }
     
-    // patterns to recognize
-    var patterns = {
-        square:  '818181FF-FF818181'
-      , line1:   '08040201-80402010' //  nw - se
-      , line2:   '10204080-01020408' //  ne - sw
-      , cross:   '18244281-81422418'
-      , circle:  '81C1437C-3867C181'
-      , heart:   '8391DF70-08181CE6'
+      // patterns to recognize
+      var patterns = {
+          square:  '818181FF-FF818181'
+        , line1:   '08040201-80402010' //  nw - se
+        , line2:   '10204080-01020408' //  ne - sw
+        , cross:   '18244281-81422418'
+        , circle:  '81C1437C-3867C181'
+        , heart:   '8391DF70-08181CE6'
+      };
+    
+      // setup jsture to watch the monitor, recognize our patterns and notify us
+      jsture.watch     ( 'monitor' )
+            .displayOn ( 'canvas'  )
+            .recognize ( patterns  )
+            .notify    ( announce  )
+      ;
     };
-    
-    // setup jsture to watch the monitor, recognize our patterns and notify us
-    jsture.watch     ( 'monitor' )
-          .displayOn ( 'canvas'  )
-          .recognize ( patterns  )
-          .notify    ( announce  )
-    ;
   </script>
   
 </body>
